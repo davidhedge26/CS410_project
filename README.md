@@ -35,3 +35,5 @@ Grades and totals are computed from the database rows and printed to the console
 Reflection:
 
 This project was a lot of fun and taught us some cool uses and features of SQL as well as using a coding language to intertwine with it to make it functional outside of its normal scope. This helped strengthen our skills of turning word problems into ER Models, turning that into SQL DDL and then using those tables for real storage. As for use of AI, we used Github Copilot to help us configure the shell and work through bugs. Implementing this was easy for the most part besides for the amount of lines of code it took but the idea is quite simple. Overall this was a great learning experience for us and we enjoyed working on it.
+
+DEMO: https://drive.google.com/file/d/1UzeQetGzEI6rdd8rb7ZbK92bP8xX29qt/view?usp=sharing

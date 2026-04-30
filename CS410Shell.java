@@ -11,10 +11,12 @@ public class CS410Shell {
     private Integer currentClassId = null;
     private String currentClassLabel = null;
 
+    // Program entry point.
     public static void main(String[] args) {
         new CS410Shell().run();
     }
 
+    // Main REPL loop: connect, read commands, dispatch.
     private void run() {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS); Scanner scanner = new Scanner(System.in)) {
             System.out.println("CS410 gradebook shell. Type 'help' for commands.");
@@ -106,6 +108,7 @@ public class CS410Shell {
         }
     }
 
+    // Prompt reflects the selected class when available.
     private String prompt() {
         if (currentClassLabel == null) {
             return "cs410> ";
@@ -113,6 +116,7 @@ public class CS410Shell {
         return "cs410[" + currentClassLabel + "]> ";
     }
 
+    // Print supported commands.
     private void printHelp() {
         System.out.println("Commands:");
         System.out.println("  new-class <ClassNum> <Term> <Section> \"Description\"");
@@ -132,6 +136,7 @@ public class CS410Shell {
         System.out.println("  quit | exit");
     }
 
+    // Split a command line into tokens while honoring quotes.
     private List<String> tokenize(String line) {
         List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -157,12 +162,14 @@ public class CS410Shell {
         return tokens;
     }
 
+    // Ensure a class is selected before running class-scoped commands.
     private void requireClass() {
         if (currentClassId == null) {
             throw new IllegalArgumentException("No class selected. Use select-class.");
         }
     }
 
+    // Create schema if it does not exist.
     private void initSchema(Connection conn) throws SQLException {
         String[] ddl = new String[]{
             "CREATE TABLE IF NOT EXISTS classes ("
@@ -223,6 +230,7 @@ public class CS410Shell {
         System.out.println("Schema initialized (if missing).");
     }
 
+    // Create a new class record.
     private void cmdNewClass(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 5) {
             throw new IllegalArgumentException("Usage: new-class <ClassNum> <Term> <Section> \"Description\"");
@@ -242,6 +250,7 @@ public class CS410Shell {
         System.out.println("Class created.");
     }
 
+    // List classes with enrollment counts.
     private void cmdListClasses(Connection conn) throws SQLException {
         String sql = "SELECT c.class_id, c.class_num, c.term, c.section_num, c.description, "
                 + "COUNT(e.student_id) AS students "
@@ -260,6 +269,7 @@ public class CS410Shell {
         }
     }
 
+    // Select class based on supplied arguments.
     private void cmdSelectClass(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 2) {
             throw new IllegalArgumentException("Usage: select-class <ClassNum> [Term] [Section]");
@@ -278,6 +288,7 @@ public class CS410Shell {
         selectSpecific(conn, classNum, term, section);
     }
 
+    // Show the active class label.
     private void cmdShowClass() {
         if (currentClassId == null) {
             System.out.println("No class selected.");
@@ -286,6 +297,7 @@ public class CS410Shell {
         }
     }
 
+    // List categories and weights for the active class.
     private void cmdShowCategories(Connection conn) throws SQLException {
         String sql = "SELECT name, weight FROM categories WHERE class_id = ? ORDER BY name";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -298,6 +310,7 @@ public class CS410Shell {
         }
     }
 
+    // Add a category to the active class.
     private void cmdAddCategory(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 3) {
             throw new IllegalArgumentException("Usage: add-category <Name> <Weight>");
@@ -314,6 +327,7 @@ public class CS410Shell {
         System.out.println("Category added.");
     }
 
+    // List assignments grouped by category.
     private void cmdShowAssignment(Connection conn) throws SQLException {
         String sql = "SELECT c.name AS category, a.name AS assignment, a.description, a.points "
                 + "FROM assignments a JOIN categories c ON a.category_id = c.category_id "
@@ -337,6 +351,7 @@ public class CS410Shell {
         }
     }
 
+    // Add an assignment under a category.
     private void cmdAddAssignment(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 5) {
             throw new IllegalArgumentException("Usage: add-assignment <Name> <Category> \"Description\" <Points>");
@@ -361,6 +376,7 @@ public class CS410Shell {
         System.out.println("Assignment added.");
     }
 
+    // Add a student or enroll an existing student.
     private void cmdAddStudent(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 2) {
             throw new IllegalArgumentException("Usage: add-student <Username> [StudentId Last First]");
@@ -426,6 +442,7 @@ public class CS410Shell {
         System.out.println("Student enrolled.");
     }
 
+    // Show students in the active class, optionally filtered.
     private void cmdShowStudents(Connection conn, List<String> tokens) throws SQLException {
         String filter = tokens.size() > 1 ? tokens.get(1).toLowerCase(Locale.ROOT) : null;
         String sql = "SELECT s.username, s.studentid, s.last_name, s.first_name "
@@ -451,6 +468,7 @@ public class CS410Shell {
         }
     }
 
+    // Record or update a grade for a student.
     private void cmdGrade(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 4) {
             throw new IllegalArgumentException("Usage: grade <AssignmentName> <Username> <Points>");
@@ -481,6 +499,7 @@ public class CS410Shell {
         System.out.println("Grade recorded.");
     }
 
+    // Show a student's grades with category subtotals.
     private void cmdStudentGrades(Connection conn, List<String> tokens) throws SQLException {
         if (tokens.size() < 2) {
             throw new IllegalArgumentException("Usage: student-grades <Username>");
@@ -527,6 +546,7 @@ public class CS410Shell {
         System.out.printf("Overall grade: %.2f%%%n", overall);
     }
 
+    // Print gradebook totals for all students in the active class.
     private void cmdGradebook(Connection conn) throws SQLException {
         Map<Integer, CategoryInfo> categories = loadCategories(conn);
         List<AssignmentInfo> assignments = loadAssignments(conn);
@@ -551,6 +571,7 @@ public class CS410Shell {
         }
     }
 
+    // Look up a category id by name for the active class.
     private Integer findCategoryId(Connection conn, String categoryName) throws SQLException {
         String sql = "SELECT category_id FROM categories WHERE class_id = ? AND name = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -565,6 +586,7 @@ public class CS410Shell {
         return null;
     }
 
+    // Look up an assignment id by name for the active class.
     private Integer findAssignmentId(Connection conn, String assignmentName) throws SQLException {
         String sql = "SELECT assignment_id FROM assignments WHERE class_id = ? AND name = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -579,6 +601,7 @@ public class CS410Shell {
         return null;
     }
 
+    // Fetch max points for an assignment.
     private int getAssignmentPoints(Connection conn, int assignmentId) throws SQLException {
         String sql = "SELECT points FROM assignments WHERE assignment_id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -592,6 +615,7 @@ public class CS410Shell {
         return 0;
     }
 
+    // Look up a student id by username.
     private Integer findStudentId(Connection conn, String username) throws SQLException {
         String sql = "SELECT student_id FROM students WHERE username = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -605,6 +629,7 @@ public class CS410Shell {
         return null;
     }
 
+    // Look up a student id by username within the active class.
     private Integer findStudentIdInClass(Connection conn, String username) throws SQLException {
         String sql = "SELECT s.student_id FROM students s JOIN enrollments e ON e.student_id = s.student_id "
                 + "WHERE e.class_id = ? AND s.username = ?";
@@ -620,6 +645,7 @@ public class CS410Shell {
         return null;
     }
 
+    // Enroll a student in the active class.
     private void enrollStudent(Connection conn, int studentId) throws SQLException {
         String sql = "INSERT IGNORE INTO enrollments (class_id, student_id) VALUES (?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -629,6 +655,7 @@ public class CS410Shell {
         }
     }
 
+    // Select the most recent term for a class number.
     private void selectMostRecent(Connection conn, String classNum) throws SQLException {
         List<ClassRow> rows = loadClasses(conn, classNum);
         if (rows.isEmpty()) {
@@ -653,6 +680,7 @@ public class CS410Shell {
         setCurrentClass(candidates.get(0));
     }
 
+    // Select a class in a specific term when only one section exists.
     private void selectSingleInTerm(Connection conn, String classNum, String term) throws SQLException {
         List<ClassRow> rows = loadClasses(conn, classNum);
         List<ClassRow> candidates = new ArrayList<>();
@@ -670,6 +698,7 @@ public class CS410Shell {
         setCurrentClass(candidates.get(0));
     }
 
+    // Select an explicit class number, term, and section.
     private void selectSpecific(Connection conn, String classNum, String term, int section) throws SQLException {
         String sql = "SELECT class_id, class_num, term, section_num, description FROM classes "
                 + "WHERE class_num = ? AND term = ? AND section_num = ?";
@@ -688,6 +717,7 @@ public class CS410Shell {
         }
     }
 
+    // Load all classes for a class number.
     private List<ClassRow> loadClasses(Connection conn, String classNum) throws SQLException {
         String sql = "SELECT class_id, class_num, term, section_num, description FROM classes WHERE class_num = ?";
         List<ClassRow> rows = new ArrayList<>();
@@ -703,12 +733,14 @@ public class CS410Shell {
         return rows;
     }
 
+    // Update the active class context.
     private void setCurrentClass(ClassRow row) {
         currentClassId = row.classId;
         currentClassLabel = row.classNum + " " + row.term + " " + row.sectionNum;
         System.out.println("Selected class: " + currentClassLabel + " - " + row.description);
     }
 
+    // Normalize term strings for ordering by year and season.
     private int termKey(String term) {
         String lower = term.toLowerCase(Locale.ROOT);
         int season = 0;
@@ -732,6 +764,7 @@ public class CS410Shell {
         return year * 10 + season;
     }
 
+    // Load categories for the active class.
     private Map<Integer, CategoryInfo> loadCategories(Connection conn) throws SQLException {
         Map<Integer, CategoryInfo> map = new HashMap<>();
         String sql = "SELECT category_id, name, weight FROM categories WHERE class_id = ? ORDER BY name";
@@ -747,6 +780,7 @@ public class CS410Shell {
         return map;
     }
 
+    // Load assignments for the active class.
     private List<AssignmentInfo> loadAssignments(Connection conn) throws SQLException {
         List<AssignmentInfo> list = new ArrayList<>();
         String sql = "SELECT assignment_id, category_id, name, points FROM assignments WHERE class_id = ? "
@@ -763,6 +797,7 @@ public class CS410Shell {
         return list;
     }
 
+    // Load grades for a single student in the active class.
     private Map<Integer, Double> loadGradesForStudent(Connection conn, int studentId) throws SQLException {
         Map<Integer, Double> map = new HashMap<>();
         String sql = "SELECT g.assignment_id, g.points FROM grades g "
@@ -780,6 +815,7 @@ public class CS410Shell {
         return map;
     }
 
+    // Compute overall percentage using category weights.
     private double computeOverall(Map<Integer, CategoryInfo> categories,
             List<AssignmentInfo> assignments,
             Map<Integer, Double> grades) {
@@ -833,6 +869,7 @@ public class CS410Shell {
         final int sectionNum;
         final String description;
 
+        // Store a lightweight class record.
         ClassRow(int classId, String classNum, String term, int sectionNum, String description) {
             this.classId = classId;
             this.classNum = classNum;
@@ -848,6 +885,7 @@ public class CS410Shell {
         final String name;
         final double weight;
 
+        // Store a lightweight category record.
         CategoryInfo(int id, String name, double weight) {
             this.id = id;
             this.name = name;
@@ -862,6 +900,7 @@ public class CS410Shell {
         final String name;
         final int points;
 
+        // Store a lightweight assignment record.
         AssignmentInfo(int assignmentId, int categoryId, String name, int points) {
             this.assignmentId = assignmentId;
             this.categoryId = categoryId;

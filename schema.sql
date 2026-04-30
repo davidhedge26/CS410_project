@@ -13,7 +13,7 @@ CREATE TABLE classes (
 
 CREATE TABLE categories (
     category_id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    class_id INTEGER NOT NULL REFERENCES classes,
+    class_id INTEGER REFERENCES classes,
     name VARCHAR(255) NOT NULL,
     weight DECIMAL(7, 2) NOT NULL,
     UNIQUE (class_id, name),
@@ -22,8 +22,8 @@ CREATE TABLE categories (
 
 CREATE TABLE assignments (
     assignment_id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    class_id INTEGER NOT NULL REFERENCES classes,
-    category_id INTEGER NOT NULL REFERENCES categories,
+    class_id INTEGER REFERENCES classes,
+    category_id INTEGER REFERENCES categories,
     name VARCHAR(255) NOT NULL,
     description TEXT(65535) NOT NULL,
     points INTEGER NOT NULL,
@@ -51,8 +51,8 @@ CREATE TABLE enrollments (
 
 CREATE TABLE grades (
     points DECIMAL(7, 2) NOT NULL,
-    assignment_id INTEGER NOT NULL REFERENCES assignments,
-    student_id INTEGER NOT NULL REFERENCES students,
+    assignment_id INTEGER REFERENCES assignments,
+    student_id INTEGER REFERENCES students,
     PRIMARY KEY (assignment_id, student_id),
     FOREIGN KEY (assignment_id) REFERENCES assignments (assignment_id),
     FOREIGN KEY (student_id) REFERENCES students (student_id),
